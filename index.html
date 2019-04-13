@@ -1,0 +1,352 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+        <link rel="stylesheet" href="style- b.css">
+  </head>
+  <body>
+  <!-- Canvas Display -->
+  <section class="display">
+    <div class="wrap">
+      <div id="loader" class="loader">
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+      </div>
+      <canvas id="canvas" class="canvas1"></canvas>
+    </div>
+		<canvas id="canvas2" class="canvas2"></canvas>
+		<div class="footer"> Développé par <a href="https://codepen.io/bouchouirabi" >bouchouirab ibtissam</a></div>
+  </section>
+  <!-- Controls -->
+  <section class="controls">
+    <h3>Dimension</h3>
+    <div class="fieldgroup">
+      <div class="row">
+        <div class="_50">
+          <label for="width">Largeur</label>
+          <input type="number" id="width">
+        </div>
+        <div class="_50">
+          <label for="height">longueur</label>
+          <input type="number" id="height">
+        </div>
+      </div>
+      <label for="preset-size">taille</label>
+      <select id="preset-size">
+        <option value="1280-720">1280 x 720</option>
+        <option value="1366-768">1366 x 768</option>
+        <option value="3840-2160">3840 x 2160 (4K)</option>
+        <option value="1920-1080">1920 x 1080</option>
+      </select>
+    </div>
+    <h3>Couleur (1-6)</h3>
+    <div class="fieldgroup">
+      <label for="numColours">  Nbr-Couleurs: <span id="num-colours"></span></label>
+      <input type="range" id="numColours" value="3" max="6" min="1" step="1"><br>
+      <div id="colour-div"></div>
+    </div>
+    <h3>Géométrie</h3>
+    <div class="fieldgroup">
+      <label for="cell-size">Taille de la cellule</label>
+      <input type="range" id="cell-size" value="30">
+  
+      <label for="oamount">Profondeur</label>
+      <input type="range" id="oamount" value="30">
+
+      <label for="variance">Variance</label>
+      <input type="range" id="variance" value="30">
+    </div>
+    <div class="section">
+      <a id="save" class="button" download="Background-image.png">Télécharger l'image</a>
+    </div>
+  </section>
+  <!-- Loader -->
+  <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+    <defs>
+    <filter id="goo">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
+      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+      <feBlend in="SourceGraphic" in2="goo" />
+    </filter>
+    </defs>
+  </svg>
+  </body>
+  <script>
+(function () { 'use strict';
+    var cvs, ctx, gridWidth, gridHeight, vRange, cRange, maxCols,maxRows,oAmount,imgd,imge,base_image,saveBtn,
+	cvs2,ctx2,loader,numColours,preset;
+var points = [];
+var cellSize = 20; 
+var variance = 0.2;
+var ovA = 0.9;
+var colours = ["#006EB4","#DAB7FF", "#FF6DFD","#C52B9F","#FFB69D","#FFE96A"];
+
+function init () {
+	cvs = document.getElementById("canvas");
+	cRange = document.getElementById("cell-size");
+	vRange = document.getElementById("variance");
+	oAmount = document.getElementById("oamount");
+	saveBtn = document.getElementById('save');
+	ctx = cvs.getContext("2d");
+	cvs2 = document.getElementById("canvas2");
+	ctx2 = cvs2.getContext("2d");
+	numColours = document.getElementById("numColours");
+	preset = document.getElementById("preset-size");
+	preset.addEventListener("change",function () {
+		var temp5 = preset.value.split("-");
+		console.log(temp5);
+		document.getElementById('width').value = parseInt(temp5[0]);
+		document.getElementById('height').value = parseInt(temp5[1]);
+	},false);
+	var setSize = function(w,h) {
+		cvs.width = w;
+		cvs.height = h;
+		gridWidth = cvs.width+cellSize*3;
+		gridHeight = cvs.height+cellSize*3;
+		cvs2.width = cvs.width;
+		cvs2.height = cvs.height;
+		document.getElementById('width').value = w;
+		document.getElementById('height').value = h;
+	}
+
+	var setCols = function() {
+		for (var i = 0; i < numColours.value; i++) {
+			var temp = document.createElement("input");
+			temp.type = "color";
+			temp.id = "colour" +(i+1);
+
+			document.getElementById("colour-div").appendChild(temp);
+			document.getElementById("num-colours").innerHTML = numColours.value;
+			temp.value = colours[i];
+			temp.addEventListener("change",function () {
+				drawBG(ctx2,cvs2);
+				loader.style.display = "";
+				var blob = window.setTimeout(function () {
+					pointFun();
+				},2);
+			},false);
+		}
+	}
+	setCols();
+	setSize(1280,720);
+		drawBG(ctx2,cvs2);
+		loader = document.getElementById("loader");
+		pointFun();
+	var tout = 0;
+	numColours.addEventListener("change",function () {
+		document.getElementById("colour-div").innerHTML = "";
+		setCols();
+		drawBG(ctx2,cvs2);
+		loader.style.display = "";
+		var blob = window.setTimeout(function () {
+			pointFun();
+		},tout);
+	},false);
+	cRange.addEventListener("change",function () {
+		loader.style.display = "";
+		var blob = window.setTimeout(function () {
+			pointFun();
+		},tout);
+	},false);
+	vRange.addEventListener("change",function () {
+		loader.style.display = "";
+		var blob = window.setTimeout(function () {
+			pointFun();
+		},tout);
+	},false);
+	oAmount.addEventListener("change",function () {
+		loader.style.display = "";
+		var blob = window.setTimeout(function () {
+			pointFun(true);
+		},tout);
+	},false);
+
+	var sizeBtn = document.getElementById('size-btn');
+	sizeBtn.addEventListener("click",function () {
+		var tempw = document.getElementById('width').value;
+		var temph = document.getElementById('height').value;
+		setSize(tempw,temph);
+		drawBG(ctx2,cvs2);
+		console.log(tempw +" : "+ temph)
+		pointFun();
+	})
+}
+function point () {
+}
+
+function drawBG(context,canvas) {
+	context.clearRect(0, 0, cvs.width, cvs.height);
+	context.globalCompositeOperation = "multiply";
+	var bg = context.createLinearGradient(0,0,canvas.width,0);
+	var inputs = document.getElementById("colour-div").getElementsByTagName('input');
+	for (var i = 0; i < inputs.length; i++) {
+		if (inputs.length > 1) {
+			bg.addColorStop(i/(inputs.length-1),inputs[i].value);
+			console.log(inputs[i].value);
+		}else{
+			bg = inputs[i].value;
+		}
+		colours[i] = inputs[i].value;
+	}
+
+	context.fillStyle = bg;
+	context.beginPath();
+	context.fillRect(0,0,canvas.width,canvas.height);
+	context.closePath();
+	context.fill();
+
+	context.beginPath();
+	var bg2 = context.createLinearGradient(0,0,0,cvs.height);
+	bg2.addColorStop(0,"#fff");
+	bg2.addColorStop(1,"#ccc");
+	context.fillStyle = bg2;
+	context.fillRect(0,0,cvs.width,cvs.height);
+	context.closePath();
+	context.fill();
+	context.globalCompositeOperation = "source-over";
+	if (context == ctx2) {imgd = context;}
+	else if (imgd.getImageData(0, 0, 1, 1).data[3] < 255 || imgd.getImageData(canvas.width-1, canvas.height-1, 1, 1).data[3] < 255) {
+		context.clearRect(0,0,canvas.width,canvas.height);
+	}
+	
+
+}
+
+function saveImage() {
+	var dataURL = canvas.toDataURL();
+	saveBtn.href = dataURL;
+}
+
+function draw (obj,rand) {
+
+	var red,blue,green,alpha;
+
+	var setColour = function (xpos,ypos) {
+		if (xpos < 0) {
+			xpos = 0;
+		}
+		if (xpos > cvs.width-1) {
+			xpos = cvs.width-1;
+		}
+		if (ypos < 0) {
+			ypos = 0;
+		}
+		if (ypos > cvs.height-1) {
+			ypos = cvs.height-1;
+		}
+		red = imgd.getImageData(xpos, ypos, 1, 1).data[0];
+		green = imgd.getImageData(xpos, ypos, 1, 1).data[1];
+		blue = imgd.getImageData(xpos, ypos, 1, 1).data[2];
+		alpha = imgd.getImageData(xpos, ypos, 1, 1).data[3];
+		
+	}
+	var filler = function () {
+		if(rand){
+			var temp = (Math.random()*2*ovA)-ovA;
+			ctx.fillStyle = "rgba("+Math.round(red-red*temp)+", "+Math.round(green-green*temp)+", "+Math.round(blue-blue*temp)+", "+alpha/255+")";
+		} else {
+			ctx.fillStyle = "rgba("+red+", "+green+", "+blue+", "+alpha/255+")";
+		}
+	}
+	
+	for (var i = 0; i < points.length; i++) {
+		if (obj == points[i] && obj.r % 2 == 0 && points[i+maxCols+1] && obj.c < maxCols-1) {
+			setColour(Math.round(obj.c/maxCols*gridWidth),Math.round(obj.r/maxRows*gridHeight+2*cellSize/4));
+			filler();
+			ctx.beginPath();
+			ctx.moveTo(obj.x,obj.y);
+			ctx.lineTo(points[i+maxCols].x,points[i+maxCols].y);
+			ctx.lineTo(points[i+maxCols+1].x,points[i+maxCols+1].y);
+			ctx.closePath();
+			ctx.fill();
+			setColour(Math.round(obj.c/maxCols*gridWidth+cellSize/2),Math.round(obj.r/maxRows*gridHeight+cellSize/4));
+			filler();
+			ctx.beginPath();
+			ctx.moveTo(obj.x,obj.y);
+			ctx.lineTo(points[i+1].x,points[i+1].y);
+			ctx.lineTo(points[i+maxCols+1].x,points[i+maxCols+1].y);
+			ctx.closePath();
+			ctx.fill();
+	
+		}
+		if (obj == points[i] && obj.r % 2 != 0 && points[i+maxCols+1] && obj.c > 0) {
+			setColour(Math.round((obj.c-1)/maxCols*gridWidth),Math.round(obj.r/maxRows*gridHeight+cellSize/4));
+			filler();
+			ctx.beginPath();
+			ctx.moveTo(obj.x,obj.y);
+			ctx.lineTo(points[i-1].x,points[i-1].y);
+			ctx.lineTo(points[i+maxCols-1].x,points[i+maxCols-1].y);
+			ctx.closePath();
+			ctx.fill();
+
+			setColour(Math.round((obj.c-1)/maxCols*gridWidth+cellSize/2),Math.round(obj.r/maxRows*gridHeight+2*cellSize/4));
+			filler();
+			ctx.beginPath();
+			ctx.moveTo(obj.x,obj.y);
+			ctx.lineTo(points[i+maxCols-1].x,points[i+maxCols-1].y);
+			ctx.lineTo(points[i+maxCols].x,points[i+maxCols].y);
+			ctx.closePath();
+			ctx.fill();
+		}
+	}
+}
+function generatePoints (amount) {
+	points = [];
+	var temp;
+	var row = 0;
+	var col = 0;
+	for (var i = 0; i < amount; i++) {
+		temp = new point();
+		if (row % 2 == 0) {
+			temp.x = (col*cellSize)-cellSize;
+			temp.x = temp.x + (Math.random()-.5)*variance*cellSize*2;
+		} else {
+			temp.x = (col*cellSize)-cellSize-cellSize/2;
+			temp.x = temp.x + (Math.random()-.5)*variance*cellSize*2;
+		}
+		temp.y = (row*cellSize*0.866)-cellSize;
+		temp.y = temp.y + (Math.random()-.5)*variance*cellSize*2;
+		temp.r = row;
+		temp.c = col;
+		points.push(temp);
+		col = col + 1;
+		if ((i+1) % maxCols == 0) {
+			row = row + 1;
+			col = 0;
+		}
+	}
+}
+
+function addRand (a,b) {
+	return (Math.random()*b*a-(b/2))
+}
+
+function pointFun (drawOnly) {
+	if(drawOnly === true){
+	}else{
+		cellSize = (cRange.value*3)+30;
+		variance = vRange.value/100;
+		gridWidth = cvs.width+cellSize*2;
+		gridHeight = cvs.height+cellSize*2;
+		maxCols = Math.ceil(gridWidth / cellSize)+2;
+		maxRows = Math.ceil(gridHeight / (cellSize*0.865))
+		var x = maxCols;
+		var y = maxRows;
+		generatePoints(x*y);
+	}
+	ovA = oAmount.value/100;
+	ctx.clearRect(0, 0, cvs.width, cvs.height);
+	drawBG(ctx,cvs);
+	for (var i = 0; i < points.length; i++) {
+		draw(points[i],true);
+	};
+	saveImage();
+	loader.style.display = "none";
+}
+document.addEventListener('DOMContentLoaded',init,false);
+})();
+  </script>
+</html>
