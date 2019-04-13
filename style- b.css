@@ -72,8 +72,8 @@ button,.button {
   text-align: center;
 }
   button:hover,.button:hover {
-    background:#444 ;
-    color:rgb(67, 173, 173);
+    background:#fff ;
+    color:#9DC9FF;
    }
 
 .section { padding: 0.5rem; }
